@@ -1,58 +1,41 @@
 import java.util.*;
 
-public class Solution {
-
+class Solution {
     public int[] assignTasks(int[] servers, int[] tasks) {
-        PriorityQueue<Server> free = new PriorityQueue<>(Comparator
-                .comparing((Server s) -> s.weight)
-                .thenComparing((Server s) -> s.index)
-        );
-        PriorityQueue<Server> busy = new PriorityQueue<>(Comparator
-                .comparing((Server s) -> s.availableAt)
-                .thenComparing((Server s) -> s.weight)
-                .thenComparing((Server s) -> s.index)
-        );
+        PriorityQueue<int[]> free = new PriorityQueue<>(Comparator.comparingInt((int[] s) -> s[0]).thenComparing((int[] s) -> s[1]));
+        PriorityQueue<int[]> busy = new PriorityQueue<>(Comparator.comparingInt((int[] s) -> s[0]));
+
+        int m = tasks.length;
+        int[] res = new int[m];
         for (int i = 0; i < servers.length; i++) {
-            free.offer(new Server(servers[i], 0, i));
+            free.offer(new int[]{servers[i], i});
         }
         int time = 0;
-        int i = 0;
-        int[] res = new int[tasks.length];
-        Queue<Integer> awaiting = new LinkedList<>();
-        while (i != tasks.length || !awaiting.isEmpty()) {
+        for (int i = 0; i < m; i++) {
+            if (time < i) {
+                time = i;
+            }
+
+            while (!busy.isEmpty() && busy.peek()[0] <= time) {
+                int[] s = busy.poll();
+                free.offer(new int[]{servers[s[1]], s[1]});
+            }
             if (free.isEmpty()) {
-                time = busy.peek().availableAt;
-                while (i < tasks.length && i != time) {
-                    awaiting.offer(i++);
+                time = busy.peek()[0];
+                while (!busy.isEmpty() && busy.peek()[0] == time) {
+                    int[] s = busy.poll();
+                    free.offer(new int[]{servers[s[1]], s[1]});
                 }
-            }
-            while (!busy.isEmpty() && busy.peek().availableAt <= time) {
-                free.offer(busy.poll());
-            }
-            if (i != tasks.length) {
-                awaiting.offer(i++);
+
             }
 
-            while (!awaiting.isEmpty() && !free.isEmpty()) {
-                Server s = free.poll();
-                int taskIndex = awaiting.poll();
-                res[taskIndex] = s.index;
-                busy.offer(new Server(s.weight, time + tasks[taskIndex], s.index));
-            }
-            time++;
+            int s = free.poll()[1];
+            res[i] = s;
+            busy.offer(new int[]{time + tasks[i], s});
+
+
         }
+
         return res;
-    }
-}
-
-class Server {
-    int weight;
-    int availableAt;
-    int index;
-
-    Server(int weight, int availableAt, int index) {
-        this.weight = weight;
-        this.availableAt = availableAt;
-        this.index = index;
     }
 }
